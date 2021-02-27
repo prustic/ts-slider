@@ -9,31 +9,33 @@ import React, {
 import { useInView } from 'react-intersection-observer'
 import { getElementDimensions, getPositionX } from '../../helpers/util'
 import Slide from '../Slide/Slide'
-import { SliderStyles, SliderWrapper } from './Slider.style'
+import { SliderStyles, SliderWrapper, Button } from './Slider.style'
 import { SliderProps } from './Slider.types'
 
 const Slider = (props: SliderProps) => {
     const {
         children,
-        onSlideComplete,
-        onSlideStart,
-        activeIndex = 0,
         threshHold = 100,
         transition = 0.3,
         scaleOnDrag = false,
     } = props
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-    const { ref, inView, entry } = useInView({
-        /* Optional options */
-        threshold: 0,
-    });
+    const [index, setIndex] = React.useState(1)
+
+    const increment = () => {
+        if (index < children.length - 1) setIndex(index + 1)
+    }
+
+    const decrement = () => {
+        if (index > 0) setIndex(index - 1)
+    }
 
     const dragging = useRef(false)
     const startPos = useRef(0)
     const currentTranslate = useRef(0)
     const prevTranslate = useRef(0)
-    const currentIndex = useRef(activeIndex)
+    const currentIndex = useRef(index);
     const sliderRef = useRef<any>('slider')
     const animationRef = useRef<number | null>(null)
 
@@ -51,14 +53,14 @@ const Slider = (props: SliderProps) => {
 
     const transitionOff = () => (sliderRef.current.style.transition = 'none')
 
-    // watch for a change in activeIndex prop
+    // watch for a change in index prop
     useEffect(() => {
-        if (activeIndex !== currentIndex.current) {
+        if (index !== currentIndex.current) {
             transitionOn()
-            currentIndex.current = activeIndex
+            currentIndex.current = index
             setPositionByIndex()
         }
-    }, [activeIndex, setPositionByIndex])
+    }, [index, setPositionByIndex])
 
     // set width after first render
     // set position by startIndex
@@ -82,9 +84,6 @@ const Slider = (props: SliderProps) => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const arrowsPressed = ['ArrowRight', 'ArrowLeft'].includes(e.key)
             if (arrowsPressed) transitionOn()
-            if (arrowsPressed && onSlideStart) {
-                onSlideStart(currentIndex.current)
-            }
             if (
                 e.key === 'ArrowRight' &&
                 currentIndex.current < children.length - 1
@@ -94,8 +93,8 @@ const Slider = (props: SliderProps) => {
             if (e.key === 'ArrowLeft' && currentIndex.current > 0) {
                 currentIndex.current -= 1
             }
-            if (arrowsPressed && onSlideComplete)
-                onSlideComplete(currentIndex.current)
+            if (arrowsPressed && setIndex)
+                setIndex(currentIndex.current)
             setPositionByIndex()
         }
 
@@ -106,7 +105,7 @@ const Slider = (props: SliderProps) => {
             window.removeEventListener('resize', handleResize)
             window.removeEventListener('keydown', handleKeyDown)
         }
-    }, [children.length, setPositionByIndex, onSlideComplete, onSlideStart])
+    }, [children.length, setPositionByIndex, setIndex])
 
     function touchStart(index: number) {
         return function (
@@ -122,8 +121,6 @@ const Slider = (props: SliderProps) => {
             dragging.current = true
             animationRef.current = requestAnimationFrame(animation)
             sliderRef.current.style.cursor = 'grabbing'
-            // if onSlideStart prop - call it
-            if (onSlideStart) onSlideStart(currentIndex.current)
         }
     }
 
@@ -157,8 +154,8 @@ const Slider = (props: SliderProps) => {
 
         setPositionByIndex()
         sliderRef.current.style.cursor = 'grab'
-        // if onSlideComplete prop - call it
-        if (onSlideComplete) onSlideComplete(currentIndex.current)
+        // if setIndex prop - call it
+        if (setIndex) setIndex(currentIndex.current)
     }
 
     function animation() {
@@ -169,9 +166,19 @@ const Slider = (props: SliderProps) => {
     function setSliderPosition() {
         sliderRef.current.style.transform = `translateX(${currentTranslate.current}px)`
     }
-        
+
     return (
         <SliderWrapper>
+            <Button onClick={decrement} left disabled={index === 0}>
+                L
+            </Button>
+            <Button
+                onClick={increment}
+                right
+                disabled={index === children.length - 1}
+            >
+                R
+            </Button>
             <SliderStyles ref={sliderRef}>
                 {children.map((child, index) => {
                     return (
