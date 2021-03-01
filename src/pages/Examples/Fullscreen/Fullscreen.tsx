@@ -1,6 +1,6 @@
 import React from 'react'
 import Slider from '../../../components/Slider/Slider'
-import { FullscreenExampleStyled } from './Fullscreen.style'
+import { Button, FullscreenExampleStyled } from './Fullscreen.style'
 import images1920x1080 from '../../../helpers/images'
 
 const FullscreenExample = () => {
@@ -8,7 +8,10 @@ const FullscreenExample = () => {
         threshHold: 100,
         transition: 0.3,
         scaleOnDrag: true,
-        displayPerSlide: 1
+        displayPerSlide: 1,
+        start: 0,
+        button: <Button />,
+        infinite: true
     }
 
     return (

@@ -4,12 +4,11 @@ import React, {
     useLayoutEffect,
     useEffect,
     useCallback,
-    RefObject,
 } from 'react'
-import { useInView } from 'react-intersection-observer'
+import styled, { css } from 'styled-components'
 import { getElementDimensions, getPositionX } from '../../helpers/util'
 import Slide from '../Slide/Slide'
-import { SliderStyles, SliderWrapper, Button } from './Slider.style'
+import { SliderStyles, SliderWrapper } from './Slider.style'
 import { SliderProps } from './Slider.types'
 
 const Slider = (props: SliderProps) => {
@@ -18,24 +17,81 @@ const Slider = (props: SliderProps) => {
         threshHold = 100,
         transition = 0.3,
         scaleOnDrag = false,
+        button,
+        start = 1,
+        slidesToScroll = 1,
+        infinite = false,
     } = props
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-    const [index, setIndex] = React.useState(1)
+    const [index, setIndex] = React.useState(start)
+    const [lengthDifference, setDifference] = React.useState(0)
 
     const increment = () => {
         if (index < children.length - 1) setIndex(index + 1)
+        else {
+            if (infinite) {
+                children.push(children[lengthDifference])
+                setIndex(index + 1)
+                setDifference(lengthDifference + 1)
+            }
+        }
     }
 
     const decrement = () => {
         if (index > 0) setIndex(index - 1)
+        else {
+            if (infinite) {
+                children.unshift(children[0])
+                console.log(children)
+                setIndex(index - 1)
+                console.log(index)
+            }
+        }
+    }
+
+    const renderButtons = () => {
+        if (button) {
+            const Button = styled.i<{
+                left?: boolean
+                right?: boolean
+                onClick: () => void
+                disabled: boolean
+            }>`
+                ${button.type.componentStyle.rules};
+                position: absolute;
+                top: 50%;
+                opacity: ${(props) => (props.disabled ? 0.4 : 1)};
+                z-index: 2;
+                ${(props) =>
+                    props.right
+                        ? css`
+                              right: 0rem;
+                              transform: rotate(-45deg);
+                          `
+                        : css`
+                              left: 0rem;
+                              transform: rotate(135deg);
+                          `}
+            `
+            return (
+                <>
+                    <Button onClick={decrement} left disabled={!infinite && index === 0} />
+                    <Button
+                        onClick={increment}
+                        right
+                        disabled={!infinite && index === children.length - 1}
+                    />
+                </>
+            )
+        } else return null
     }
 
     const dragging = useRef(false)
     const startPos = useRef(0)
     const currentTranslate = useRef(0)
     const prevTranslate = useRef(0)
-    const currentIndex = useRef(index);
+    const currentIndex = useRef(index)
     const sliderRef = useRef<any>('slider')
     const animationRef = useRef<number | null>(null)
 
@@ -84,17 +140,20 @@ const Slider = (props: SliderProps) => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const arrowsPressed = ['ArrowRight', 'ArrowLeft'].includes(e.key)
             if (arrowsPressed) transitionOn()
-            if (
-                e.key === 'ArrowRight' &&
-                currentIndex.current < children.length - 1
-            ) {
-                currentIndex.current += 1
+            if (e.key === 'ArrowRight') {
+                if (currentIndex.current < children.length - 1)
+                    currentIndex.current += 1
+                else {
+                    if (infinite) {
+                        generateNextSlide()
+                        currentIndex.current += 1
+                    }
+                }
             }
             if (e.key === 'ArrowLeft' && currentIndex.current > 0) {
                 currentIndex.current -= 1
             }
-            if (arrowsPressed && setIndex)
-                setIndex(currentIndex.current)
+            if (arrowsPressed && setIndex) setIndex(currentIndex.current)
             setPositionByIndex()
         }
 
@@ -121,6 +180,10 @@ const Slider = (props: SliderProps) => {
             dragging.current = true
             animationRef.current = requestAnimationFrame(animation)
             sliderRef.current.style.cursor = 'grabbing'
+
+            if(infinite && currentIndex.current === children.length - 1) {
+                generateNextSlide();               
+            }
         }
     }
 
@@ -143,7 +206,7 @@ const Slider = (props: SliderProps) => {
         const movedBy = currentTranslate.current - prevTranslate.current
 
         // if moved enough negative then snap to next slide if there is one
-        if (movedBy < -threshHold && currentIndex.current < children.length - 1)
+        if (movedBy < -threshHold && currentIndex.current < children.length - 1 || (movedBy < -threshHold && infinite))
             currentIndex.current += 1
 
         // if moved enough positive then snap to previous slide if there is one
@@ -167,18 +230,14 @@ const Slider = (props: SliderProps) => {
         sliderRef.current.style.transform = `translateX(${currentTranslate.current}px)`
     }
 
+    function generateNextSlide() {
+        children.push(children[lengthDifference])
+        setDifference(lengthDifference + 1)
+    }
+
     return (
         <SliderWrapper>
-            <Button onClick={decrement} left disabled={index === 0}>
-                L
-            </Button>
-            <Button
-                onClick={increment}
-                right
-                disabled={index === children.length - 1}
-            >
-                R
-            </Button>
+            {renderButtons()}
             <SliderStyles ref={sliderRef}>
                 {children.map((child, index) => {
                     return (

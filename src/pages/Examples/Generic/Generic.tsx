@@ -1,5 +1,5 @@
 import React from 'react'
-import { GenericExampleStyled } from './Generic.style';
+import { GenericExampleStyled, Button } from './Generic.style';
 import Slider from '../../../components/Slider/Slider'
 import images1920x1080 from '../../../helpers/images';
 
@@ -8,7 +8,10 @@ const GenericExample = () => {
         threshHold: 100,
         transition: 0.3,
         scaleOnDrag: true,
-        displayPerSlide: 3
+        displayPerSlide: 3,
+        button: <Button />,
+        start: 0,
+        slidesToScroll: 3
     }
     
     return (

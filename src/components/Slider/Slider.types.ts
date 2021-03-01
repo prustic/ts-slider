@@ -6,4 +6,8 @@ export type SliderProps = {
     transition: number
     scaleOnDrag: boolean
     displayPerSlide: number
+    button?: JSX.Element
+    slidesToScroll?: number
+    start?: number
+    infinite?: boolean
 }
