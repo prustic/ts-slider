@@ -25,15 +25,14 @@ const Slider = (props: SliderProps) => {
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
     const [index, setIndex] = React.useState(start)
-    const [lengthDifference, setDifference] = React.useState(0)
+    const [positiveLengthDifference, setPositiveDifference] = React.useState(0)
 
     const increment = () => {
         if (index < children.length - 1) setIndex(index + 1)
         else {
             if (infinite) {
-                children.push(children[lengthDifference])
+                generateNextSlide()
                 setIndex(index + 1)
-                setDifference(lengthDifference + 1)
             }
         }
     }
@@ -42,10 +41,9 @@ const Slider = (props: SliderProps) => {
         if (index > 0) setIndex(index - 1)
         else {
             if (infinite) {
-                children.unshift(children[0])
+                children.unshift(children[children.length - 1 + index])
                 console.log(children)
                 setIndex(index - 1)
-                console.log(index)
             }
         }
     }
@@ -76,7 +74,11 @@ const Slider = (props: SliderProps) => {
             `
             return (
                 <>
-                    <Button onClick={decrement} left disabled={!infinite && index === 0} />
+                    <Button
+                        onClick={decrement}
+                        left
+                        disabled={!infinite && index === 0}
+                    />
                     <Button
                         onClick={increment}
                         right
@@ -109,27 +111,19 @@ const Slider = (props: SliderProps) => {
 
     const transitionOff = () => (sliderRef.current.style.transition = 'none')
 
-    // watch for a change in index prop
     useEffect(() => {
         if (index !== currentIndex.current) {
-            transitionOn()
-            currentIndex.current = index
-            setPositionByIndex()
+            handleIndexChange()
         }
     }, [index, setPositionByIndex])
 
-    // set width after first render
-    // set position by startIndex
-    // no animation on startIndex
     useLayoutEffect(() => {
         setDimensions(getElementDimensions(sliderRef))
 
         setPositionByIndex(getElementDimensions(sliderRef).width)
     }, [setPositionByIndex])
 
-    // add event listeners
     useEffect(() => {
-        // set width if window resizes
         const handleResize = () => {
             transitionOff()
             const { width, height } = getElementDimensions(sliderRef)
@@ -166,6 +160,12 @@ const Slider = (props: SliderProps) => {
         }
     }, [children.length, setPositionByIndex, setIndex])
 
+    function handleIndexChange() {
+        transitionOn()
+        currentIndex.current = index
+        setPositionByIndex()
+    }
+
     function touchStart(index: number) {
         return function (
             event:
@@ -181,8 +181,8 @@ const Slider = (props: SliderProps) => {
             animationRef.current = requestAnimationFrame(animation)
             sliderRef.current.style.cursor = 'grabbing'
 
-            if(infinite && currentIndex.current === children.length - 1) {
-                generateNextSlide();               
+            if (infinite && currentIndex.current === children.length - 1) {
+                generateNextSlide()
             }
         }
     }
@@ -205,11 +205,13 @@ const Slider = (props: SliderProps) => {
         dragging.current = false
         const movedBy = currentTranslate.current - prevTranslate.current
 
-        // if moved enough negative then snap to next slide if there is one
-        if (movedBy < -threshHold && currentIndex.current < children.length - 1 || (movedBy < -threshHold && infinite))
+        if (
+            (movedBy < -threshHold &&
+                currentIndex.current < children.length - 1) ||
+            (movedBy < -threshHold && infinite)
+        )
             currentIndex.current += 1
 
-        // if moved enough positive then snap to previous slide if there is one
         if (movedBy > threshHold && currentIndex.current > 0)
             currentIndex.current -= 1
 
@@ -217,7 +219,6 @@ const Slider = (props: SliderProps) => {
 
         setPositionByIndex()
         sliderRef.current.style.cursor = 'grab'
-        // if setIndex prop - call it
         if (setIndex) setIndex(currentIndex.current)
     }
 
@@ -231,8 +232,8 @@ const Slider = (props: SliderProps) => {
     }
 
     function generateNextSlide() {
-        children.push(children[lengthDifference])
-        setDifference(lengthDifference + 1)
+        children.push(children[positiveLengthDifference])
+        setPositiveDifference(positiveLengthDifference + 1)
     }
 
     return (
