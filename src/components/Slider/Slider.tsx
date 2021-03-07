@@ -6,7 +6,11 @@ import React, {
     useCallback,
 } from 'react'
 import styled, { css } from 'styled-components'
-import { getElementDimensions, getPositionX } from '../../helpers/util'
+import {
+    getElementDimensions,
+    getPositionX,
+    infinitize,
+} from '../../helpers/util'
 import Slide from '../Slide/Slide'
 import { SliderStyles, SliderWrapper } from './Slider.style'
 import { SliderProps } from './Slider.types'
@@ -22,13 +26,15 @@ const Slider = (props: SliderProps) => {
         slidesToScroll = 1,
         infinite = false,
     } = props
+    const infiniteChildren = infinitize(children)
+    console.log(infiniteChildren.length)
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
     const [index, setIndex] = React.useState(start)
     const [positiveLengthDifference, setPositiveDifference] = React.useState(0)
 
     const increment = () => {
-        if (index < children.length - 1) setIndex(index + 1)
+        if (index < infiniteChildren.length - 1) setIndex(index + 1)
         else {
             if (infinite) {
                 generateNextSlide()
@@ -38,11 +44,10 @@ const Slider = (props: SliderProps) => {
     }
 
     const decrement = () => {
-        if (index > 0) setIndex(index - 1)
+        if (index > 1) setIndex(index - 1)
         else {
             if (infinite) {
-                children.unshift(children[children.length - 1 + index])
-                console.log(children)
+                generatePreviousSlide()
                 setIndex(index - 1)
             }
         }
@@ -82,7 +87,9 @@ const Slider = (props: SliderProps) => {
                     <Button
                         onClick={increment}
                         right
-                        disabled={!infinite && index === children.length - 1}
+                        disabled={
+                            !infinite && index === infiniteChildren.length - 1
+                        }
                     />
                 </>
             )
@@ -113,6 +120,7 @@ const Slider = (props: SliderProps) => {
 
     useEffect(() => {
         if (index !== currentIndex.current) {
+            console.log(index)
             handleIndexChange()
         }
     }, [index, setPositionByIndex])
@@ -135,7 +143,7 @@ const Slider = (props: SliderProps) => {
             const arrowsPressed = ['ArrowRight', 'ArrowLeft'].includes(e.key)
             if (arrowsPressed) transitionOn()
             if (e.key === 'ArrowRight') {
-                if (currentIndex.current < children.length - 1)
+                if (currentIndex.current < infiniteChildren.length - 1)
                     currentIndex.current += 1
                 else {
                     if (infinite) {
@@ -144,8 +152,15 @@ const Slider = (props: SliderProps) => {
                     }
                 }
             }
-            if (e.key === 'ArrowLeft' && currentIndex.current > 0) {
-                currentIndex.current -= 1
+            if (e.key === 'ArrowLeft') {
+                if (currentIndex.current > 0) {
+                    currentIndex.current -= 1
+                } else {
+                    if (infinite) {
+                        generatePreviousSlide()
+                        currentIndex.current -= 1
+                    }
+                }
             }
             if (arrowsPressed && setIndex) setIndex(currentIndex.current)
             setPositionByIndex()
@@ -158,11 +173,11 @@ const Slider = (props: SliderProps) => {
             window.removeEventListener('resize', handleResize)
             window.removeEventListener('keydown', handleKeyDown)
         }
-    }, [children.length, setPositionByIndex, setIndex])
+    }, [infiniteChildren.length, setPositionByIndex, setIndex])
 
     function handleIndexChange() {
         transitionOn()
-        currentIndex.current = index
+        currentIndex.current = infinite && index < 1 ? 0 : index
         setPositionByIndex()
     }
 
@@ -181,8 +196,18 @@ const Slider = (props: SliderProps) => {
             animationRef.current = requestAnimationFrame(animation)
             sliderRef.current.style.cursor = 'grabbing'
 
-            if (infinite && currentIndex.current === children.length - 1) {
+            if (
+                infinite &&
+                currentIndex.current === infiniteChildren.length - 1
+            ) {
                 generateNextSlide()
+            }
+
+            if( 
+                infinite &&
+                currentIndex.current <= 0
+            ) {
+                generatePreviousSlide()
             }
         }
     }
@@ -207,12 +232,15 @@ const Slider = (props: SliderProps) => {
 
         if (
             (movedBy < -threshHold &&
-                currentIndex.current < children.length - 1) ||
+                currentIndex.current < infiniteChildren.length - 1) ||
             (movedBy < -threshHold && infinite)
         )
             currentIndex.current += 1
 
-        if (movedBy > threshHold && currentIndex.current > 0)
+        if (
+            (movedBy > threshHold && currentIndex.current > 0) ||
+            (movedBy > threshHold && infinite)
+        )
             currentIndex.current -= 1
 
         transitionOn()
@@ -232,15 +260,19 @@ const Slider = (props: SliderProps) => {
     }
 
     function generateNextSlide() {
-        children.push(children[positiveLengthDifference])
+        infiniteChildren.push(infiniteChildren[positiveLengthDifference])
         setPositiveDifference(positiveLengthDifference + 1)
+    }
+
+    function generatePreviousSlide() {
+        infiniteChildren.unshift(infiniteChildren[index - 1])
     }
 
     return (
         <SliderWrapper>
             {renderButtons()}
             <SliderStyles ref={sliderRef}>
-                {children.map((child, index) => {
+                {infiniteChildren.map((child, index) => {
                     return (
                         <div
                             key={index}
