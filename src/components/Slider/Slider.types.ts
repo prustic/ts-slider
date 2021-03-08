@@ -8,6 +8,7 @@ export type SliderProps = {
     displayPerSlide: number
     button?: JSX.Element
     slidesToScroll?: number
+    slidesToShow?: number
     start?: number
     infinite?: boolean
 }

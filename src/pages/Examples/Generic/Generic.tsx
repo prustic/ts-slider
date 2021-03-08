@@ -11,7 +11,8 @@ const GenericExample = () => {
         displayPerSlide: 3,
         button: <Button />,
         start: 0,
-        slidesToScroll: 3
+        slidesToScroll: 1,
+        slidesToShow: 1.25
     }
     
     return (
