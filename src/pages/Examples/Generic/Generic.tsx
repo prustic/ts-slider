@@ -8,11 +8,10 @@ const GenericExample = () => {
         threshHold: 100,
         transition: 0.3,
         scaleOnDrag: true,
-        displayPerSlide: 3,
         button: <Button />,
         start: 0,
-        slidesToScroll: 2,
-        slidesToShow: 3
+        slidesToScroll: 1,
+        slidesToShow: 1.25
     }
     
     return (

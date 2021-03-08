@@ -5,7 +5,6 @@ export type SliderProps = {
     threshHold: number
     transition: number
     scaleOnDrag: boolean
-    displayPerSlide: number
     button?: JSX.Element
     slidesToScroll?: number
     slidesToShow?: number
